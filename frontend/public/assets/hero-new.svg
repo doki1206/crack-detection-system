@@ -1,0 +1,59 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" width="1440" height="900">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a14"/>
+      <stop offset="35%" style="stop-color:#141424"/>
+      <stop offset="70%" style="stop-color:#1a1208"/>
+      <stop offset="100%" style="stop-color:#0d0804"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="70%" cy="15%" r="30%">
+      <stop offset="0%" style="stop-color:#C8924B;stop-opacity:0.25"/>
+      <stop offset="50%" style="stop-color:#C8924B;stop-opacity:0.05"/>
+      <stop offset="100%" style="stop-color:#C8924B;stop-opacity:0"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+  <rect width="1440" height="900" fill="url(#skyGrad)"/>
+  <rect width="1440" height="900" fill="url(#sun)"/>
+  <!-- Stars -->
+  <g fill="white" opacity="0.5">
+    {{0}}<circle cx="120" cy="80" r="1"/><circle cx="280" cy="50" r="0.8"/><circle cx="430" cy="120" r="1.2"/>
+    <circle cx="580" cy="40" r="0.7"/><circle cx="720" cy="95" r="1"/><circle cx="880" cy="30" r="0.9"/>
+    <circle cx="1020" cy="85" r="0.6"/><circle cx="1150" cy="55" r="1.1"/><circle cx="1320" cy="70" r="0.8"/>
+    <circle cx="200" cy="180" r="0.5"/><circle cx="650" cy="150" r="0.7"/><circle cx="960" cy="140" r="0.6"/>
+  </g>
+  <!-- Mountains -->
+  <path d="M0,550 L180,420 L350,480 L520,380 L700,460 L880,400 L1040,450 L1200,380 L1350,440 L1440,400 L1440,900 L0,900 Z" fill="#1a1510" opacity="0.95"/>
+  <path d="M0,600 L150,500 L300,550 L450,470 L620,530 L770,490 L920,540 L1080,480 L1250,520 L1440,490 L1440,900 L0,900 Z" fill="#221a0d" opacity="0.9"/>
+  <!-- Ground cracks -->
+  <g stroke="#C8924B" stroke-width="1" fill="none" opacity="0.35">
+    <path d="M350,680 Q370,700 360,730 Q350,760 370,790 Q380,820 360,850"/>
+    <path d="M360,730 Q390,735 400,760"/>
+    <path d="M780,650 Q800,670 790,700 Q780,730 800,760"/>
+    <path d="M1050,670 Q1070,690 1060,720 Q1050,750 1070,780"/>
+    <path d="M1060,720 Q1090,725 1100,750"/>
+    <path d="M500,720 Q520,740 510,770"/>
+    <path d="M1250,690 Q1270,710 1260,740"/>
+  </g>
+  <!-- Larger crack -->
+  <g stroke="#1a1108" stroke-width="2.5" fill="none" opacity="0.5">
+    <path d="M450,700 Q470,730 460,770 Q450,810 470,850"/>
+    <path d="M900,680 Q920,710 910,750 Q900,790 920,830"/>
+  </g>
+  <!-- Drone (small, far away) -->
+  <g transform="translate(480, 320) rotate(-6)" opacity="0.7">
+    <ellipse cx="0" cy="0" rx="14" ry="8" fill="#2a2a2a" stroke="#555" stroke-width="0.5"/>
+    <line x1="-10" y1="-4" x2="-28" y2="-16" stroke="#555" stroke-width="1.5"/>
+    <line x1="10" y1="-4" x2="28" y2="-16" stroke="#555" stroke-width="1.5"/>
+    <line x1="-10" y1="4" x2="-28" y2="16" stroke="#555" stroke-width="1.5"/>
+    <line x1="10" y1="4" x2="28" y2="16" stroke="#555" stroke-width="1.5"/>
+    <ellipse cx="-28" cy="-16" rx="11" ry="3" fill="none" stroke="#C8924B" stroke-width="0.6" opacity="0.6"/>
+    <ellipse cx="28" cy="-16" rx="11" ry="3" fill="none" stroke="#C8924B" stroke-width="0.6" opacity="0.6"/>
+    <ellipse cx="-28" cy="16" rx="11" ry="3" fill="none" stroke="#C8924B" stroke-width="0.6" opacity="0.6"/>
+    <ellipse cx="28" cy="16" rx="11" ry="3" fill="none" stroke="#C8924B" stroke-width="0.6" opacity="0.6"/>
+  </g>
+  <!-- Bottom fade -->
+  <rect x="0" y="820" width="1440" height="80" fill="#0d0804" opacity="0.9"/>
+</svg>

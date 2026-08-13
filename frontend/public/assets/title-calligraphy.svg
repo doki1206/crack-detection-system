@@ -1,0 +1,45 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d4a05a"/>
+      <stop offset="30%" style="stop-color:#e8c878"/>
+      <stop offset="60%" style="stop-color:#C8924B"/>
+      <stop offset="100%" style="stop-color:#a07030"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- . -->
+  <g filter="url(#shadow)">
+    <text x="30" y="148" font-family="'STKaiti','KaiTi','FangSong','SimSun',serif" font-size="145" font-weight="900" fill="url(#goldGrad)" font-style="italic">
+      <tspan font-size="152">穹</tspan>
+    </text>
+  </g>
+
+  <!-- . -->
+  <g filter="url(#shadow)">
+    <text x="195" y="142" font-family="'STKaiti','KaiTi','FangSong','SimSun',serif" font-size="138" font-weight="900" fill="url(#goldGrad)" font-style="italic">
+      眸
+    </text>
+  </g>
+
+  <!-- . -->
+  <g filter="url(#shadow)">
+    <text x="340" y="150" font-family="'STKaiti','KaiTi','FangSong','SimSun',serif" font-size="152" font-weight="900" fill="url(#goldGrad)" font-style="italic">
+      瞰
+    </text>
+  </g>
+
+  <!-- . -->
+  <g filter="url(#shadow)">
+    <text x="500" y="140" font-family="'STKaiti','KaiTi','FangSong','SimSun',serif" font-size="140" font-weight="900" fill="url(#goldGrad)" font-style="italic">
+      陷
+    </text>
+  </g>
+
+  <!-- Decorative lines -->
+  <path d="M30,162 Q400,180 620,162" stroke="url(#goldGrad)" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M60,170 Q400,185 590,170" stroke="url(#goldGrad)" stroke-width="1" fill="none" opacity="0.3"/>
+</svg>
