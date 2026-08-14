@@ -116,7 +116,7 @@
         <span class="section__subtitle">PRACTICE TIMELINE</span>
         <h2 class="section__heading section__heading--center font-premium">鄂尔多斯酸刺沟驻矿行程</h2>
         
-        <div class="timeline">
+        <ScrollSnap class="timeline" :gap="20">
           <div class="timeline__item lg-card lg-glass--sheen" v-for="(t, i) in timeline" :key="i">
             <div class="timeline__top">
               <span class="timeline__step">{{ String(i + 1).padStart(2, '0') }}</span>
@@ -125,13 +125,15 @@
             <h4 class="timeline__title">{{ t.title }}</h4>
             <p class="timeline__desc">{{ t.desc }}</p>
           </div>
-        </div>
+        </ScrollSnap>
       </div>
     </section>
   </div>
 </template>
 
 <script setup>
+import ScrollSnap from '../components/ScrollSnap.vue'
+
 const workflow = [
   { 
     icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>', 
@@ -431,19 +433,6 @@ const timeline = [
 .context-row__text { font-size: 13.5px; line-height: 1.7; color: rgba(255, 255, 255, 0.7); }
 
 /* Timeline → Apple 式圆角矩形横滑卡片 */
-.timeline {
-  display: flex;
-  gap: 20px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 8px 4px 24px;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  /* 两端渐隐，暗示可滑动 */
-  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
-}
-.timeline::-webkit-scrollbar { display: none; }
 .timeline__item {
   flex: 0 0 min(320px, 82vw);
   scroll-snap-align: start;

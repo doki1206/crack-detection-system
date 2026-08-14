@@ -17,7 +17,7 @@
         <span class="section__subtitle">GUIDING ADVISOR</span>
         <h2 class="section__heading section__heading--center font-premium">指导老师</h2>
         
-        <div class="advisors-grid">
+        <ScrollSnap class="advisors-grid">
           <div class="advisor-card lg-card lg-glass--sheen" v-for="a in advisors" :key="a.name">
             <div class="advisor-card__visual">
               <div class="avatar-ring animate-rotate"></div>
@@ -42,7 +42,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </ScrollSnap>
       </div>
     </section>
 
@@ -53,7 +53,7 @@
         <h2 class="section__heading section__heading--center font-premium">成员风采</h2>
         <p class="members-summary">实践团队覆盖矿业工程、AI技术应用、数码建模、视频记录及联络公关，形成了优势互补、高效协同的一体化团队结构。</p>
         
-        <div class="members-grid">
+        <ScrollSnap class="members-grid">
           <div class="member-card lg-card lg-glass--sheen" v-for="m in members" :key="m.name">
             <div class="member-card__visual">
               <div class="member-avatar">
@@ -85,13 +85,15 @@
               </div>
             </div>
           </div>
-        </div>
+        </ScrollSnap>
       </div>
     </section>
   </div>
 </template>
 
 <script setup>
+import ScrollSnap from '../components/ScrollSnap.vue'
+
 const advisors = [
   {
     name: "赵毅鑫",
@@ -187,18 +189,6 @@ const members = [
   background: transparent;
   padding-bottom: 56px;
 }
-.advisors-grid {
-  display: flex;
-  gap: 24px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 8px 4px 24px;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
-}
-.advisors-grid::-webkit-scrollbar { display: none; }
 .advisor-card {
   display: flex;
   align-items: flex-start; /* 名字顶端对齐，避免因标签数不同导致错位 */
@@ -284,18 +274,6 @@ const members = [
   line-height: 1.75;
   color: rgba(255, 255, 255, 0.6);
 }
-.members-grid {
-  display: flex;
-  gap: 24px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 8px 4px 24px;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
-}
-.members-grid::-webkit-scrollbar { display: none; }
 .member-card {
   flex: 0 0 min(300px, 82vw);
   scroll-snap-align: start;
