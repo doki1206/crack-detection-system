@@ -13,7 +13,7 @@
 
 import { onMounted, onUnmounted } from "vue"
 import * as THREE from "three"
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js"
 
 // ─── 工具函数 ────────────────────────────────────────────────
 
@@ -92,7 +92,7 @@ function latLongToVector3(lat, lon, radius) {
 export function useThreeEarth(canvasContainer) {
   // Three.js 核心实例
   let scene, camera, renderer
-  let earthMesh, overlayMesh, glowMesh, nasaEarthModel
+  let earthMesh, overlayMesh, glowMesh
   let baseMapCanvas, textureCanvas, textureCtx, earthTexture
   let droneGroup, rotorGroup1, rotorGroup2, rotorGroup3, rotorGroup4
   let laserLine, scanIntersectionRing
@@ -269,13 +269,13 @@ export function useThreeEarth(canvasContainer) {
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(0, -1, 0)
     ])
-    laserLine = new THREE.Line(laserGeo, new THREE.LineBasicMaterial({ color: 0xc8924b, transparent: true, opacity: 0.9 }))
+    laserLine = new THREE.Line(laserGeo, new THREE.LineBasicMaterial({ color: 0x7cd4f0, transparent: true, opacity: 0.9 }))
     laserLine.visible = false
     scene.add(laserLine)
 
     const ringGeo = new THREE.RingGeometry(0.06, 0.1, 32)
     scanIntersectionRing = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
-      color: 0xc8924b, transparent: true, opacity: 0.8, side: THREE.DoubleSide, blending: THREE.AdditiveBlending
+      color: 0x7cd4f0, transparent: true, opacity: 0.8, side: THREE.DoubleSide, blending: THREE.AdditiveBlending
     }))
     scanIntersectionRing.visible = false
     scene.add(scanIntersectionRing)
@@ -354,67 +354,152 @@ export function useThreeEarth(canvasContainer) {
     jellyfishUniforms.uTime.value = performance.now() * 0.001
   }
 
-  // 7. 无人机模型
+  // 7. 无人机模型 — 仿工业级四旋翼：椭圆舱体 / 锥形机臂 / 云台相机 / 起落滑橇
   function assemble3DDrone() {
     droneGroup = new THREE.Group()
-    const carbonMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1e, metalness: 0.85, roughness: 0.25 })
-    const goldMetalMat = new THREE.MeshStandardMaterial({ color: 0xC8924B, metalness: 0.95, roughness: 0.1 })
+    const carbonMat = new THREE.MeshStandardMaterial({ color: 0x17171b, metalness: 0.8, roughness: 0.32 })
+    const carbonSoft = new THREE.MeshStandardMaterial({ color: 0x222227, metalness: 0.6, roughness: 0.5 })
+    const goldMetalMat = new THREE.MeshStandardMaterial({ color: 0xC8924B, metalness: 1.0, roughness: 0.18 })
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x0a1016, metalness: 1.0, roughness: 0.05 })
 
-    const plateLower = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.006, 0.22), carbonMat)
-    plateLower.position.y = -0.04; droneGroup.add(plateLower)
-    const plateUpper = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.006, 0.22), carbonMat)
-    plateUpper.position.y = 0.02; droneGroup.add(plateUpper)
+    // ── 主机身：上下两片椭圆舱体 ──
+    const hullGeo = new THREE.SphereGeometry(0.11, 32, 24)
+    const hull = new THREE.Mesh(hullGeo, carbonMat)
+    hull.scale.set(1.25, 0.42, 1.0)
+    droneGroup.add(hull)
 
-    const pillarGeo = new THREE.CylinderGeometry(0.008, 0.008, 0.06, 6)
-    ;[[0.09, 0.09], [-0.09, 0.09], [0.09, -0.09], [-0.09, -0.09]].forEach(o => {
-      const p = new THREE.Mesh(pillarGeo, goldMetalMat)
-      p.position.set(o[0], -0.01, o[1]); droneGroup.add(p)
-    })
+    const canopyGeo = new THREE.SphereGeometry(0.085, 32, 24)
+    const canopy = new THREE.Mesh(canopyGeo, carbonSoft)
+    canopy.scale.set(1.1, 0.36, 0.85)
+    canopy.position.y = 0.028
+    droneGroup.add(canopy)
 
-    centralLED = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.8 }))
-    centralLED.position.y = -0.01; droneGroup.add(centralLED)
+    // 金色腰线
+    const beltGeo = new THREE.TorusGeometry(0.115, 0.004, 8, 48)
+    const belt = new THREE.Mesh(beltGeo, goldMetalMat)
+    belt.rotation.x = Math.PI / 2
+    belt.scale.set(1.25, 1.0, 1.0)
+    belt.position.y = -0.004
+    droneGroup.add(belt)
 
-    ;[1, -1].forEach(s => {
-      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.02, 0.85), carbonMat)
-      arm.rotation.y = s * Math.PI / 4; arm.position.y = -0.01; droneGroup.add(arm)
-    })
+    // 中央呼吸灯
+    centralLED = new THREE.Mesh(new THREE.SphereGeometry(0.014, 12, 12), new THREE.MeshBasicMaterial({ color: 0x00ffcc, transparent: true, opacity: 0.8 }))
+    centralLED.position.set(0, 0.052, 0)
+    droneGroup.add(centralLED)
 
-    rotorGroup1 = new THREE.Group(); rotorGroup2 = new THREE.Group(); rotorGroup3 = new THREE.Group(); rotorGroup4 = new THREE.Group()
-    const motorGeo = new THREE.CylinderGeometry(0.024, 0.024, 0.04, 6)
-    const motorMat = new THREE.MeshStandardMaterial({ color: 0x111113 })
-    const bladeGeo = new THREE.BoxGeometry(0.24, 0.003, 0.014)
-    const bladeMat = new THREE.MeshBasicMaterial({ color: 0xC8924B })
-    const blurGeo = new THREE.RingGeometry(0.02, 0.14, 16)
-    const blurMat = new THREE.MeshBasicMaterial({ color: 0xC8924B, transparent: true, opacity: 0.07, side: THREE.DoubleSide })
+    // ── 机臂 + 电机 + 旋翼（X 型四轴）──
+    const armLen = 0.34
+    const armGeo = new THREE.CylinderGeometry(0.009, 0.016, armLen, 10)
+    const motorGeo = new THREE.CylinderGeometry(0.026, 0.03, 0.038, 16)
+    const motorCapGeo = new THREE.SphereGeometry(0.02, 16, 12)
+    // 桨叶：细长矩形 + 扭转尖端的近似
+    const bladeGeo = new THREE.BoxGeometry(0.30, 0.0028, 0.022)
+    const bladeMat = new THREE.MeshStandardMaterial({ color: 0x2c2c30, metalness: 0.7, roughness: 0.35 })
+    const bladeTipMat = new THREE.MeshStandardMaterial({ color: 0xC8924B, metalness: 0.9, roughness: 0.3 })
+    const blurGeo = new THREE.RingGeometry(0.03, 0.155, 32)
+    const blurMat = new THREE.MeshBasicMaterial({ color: 0xd4a05a, transparent: true, opacity: 0.08, side: THREE.DoubleSide, depthWrite: false })
 
-    function setupRotor(group, x, z, index) {
-      group.position.set(x, 0.01, z)
-      group.add(new THREE.Mesh(motorGeo, motorMat))
-      const blade = new THREE.Mesh(bladeGeo, bladeMat); blade.position.y = 0.022; group.add(blade)
-      const blurDisk = new THREE.Mesh(blurGeo, blurMat); blurDisk.position.y = 0.022; blurDisk.rotation.x = Math.PI / 2; group.add(blurDisk)
-      if (index === 1) propBlur1 = blurDisk; else if (index === 2) propBlur2 = blurDisk
-      else if (index === 3) propBlur3 = blurDisk; else if (index === 4) propBlur4 = blurDisk
+    rotorGroup1 = new THREE.Group(); rotorGroup2 = new THREE.Group()
+    rotorGroup3 = new THREE.Group(); rotorGroup4 = new THREE.Group()
+    const rotorGroups = [rotorGroup1, rotorGroup2, rotorGroup3, rotorGroup4]
+
+    const up = new THREE.Vector3(0, 1, 0)
+    for (let i = 0; i < 4; i++) {
+      const angle = Math.PI / 4 + i * (Math.PI / 2) // 45°, 135°, 225°, 315°
+      const dir = new THREE.Vector3(Math.cos(angle), 0, Math.sin(angle))
+
+      // 机臂：从机身伸向旋翼，略微上扬
+      const armDir = dir.clone(); armDir.y = 0.10; armDir.normalize()
+      const arm = new THREE.Mesh(armGeo, carbonMat)
+      arm.quaternion.setFromUnitVectors(up, armDir)
+      arm.position.copy(armDir).multiplyScalar(armLen / 2 + 0.07)
+      droneGroup.add(arm)
+
+      // 旋翼组：children[0]=电机 children[1]=桨叶 children[2]=模糊盘
+      const group = rotorGroups[i]
+      const rotorPos = armDir.clone().multiplyScalar(armLen + 0.09)
+      group.position.copy(rotorPos)
+
+      const motor = new THREE.Mesh(motorGeo, carbonSoft)
+      group.add(motor)
+
+      const blade = new THREE.Group()
+      const bladeMain = new THREE.Mesh(bladeGeo, bladeMat)
+      blade.add(bladeMain)
+      ;[1, -1].forEach(s => {
+        const tip = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.003, 0.024), bladeTipMat)
+        tip.position.x = s * 0.135
+        blade.add(tip)
+      })
+      blade.position.y = 0.034
+      group.add(blade)
+
+      const blurDisk = new THREE.Mesh(blurGeo, blurMat)
+      blurDisk.rotation.x = Math.PI / 2
+      blurDisk.position.y = 0.034
+      group.add(blurDisk)
+
+      const motorCap = new THREE.Mesh(motorCapGeo, goldMetalMat)
+      motorCap.position.y = 0.024
+      group.add(motorCap)
+
       droneGroup.add(group)
+      if (i === 0) propBlur1 = blurDisk; else if (i === 1) propBlur2 = blurDisk
+      else if (i === 2) propBlur3 = blurDisk; else propBlur4 = blurDisk
     }
 
-    const off = 0.425 * Math.sin(Math.PI / 4)
-    setupRotor(rotorGroup1, off, off, 1); setupRotor(rotorGroup2, -off, off, 2)
-    setupRotor(rotorGroup3, off, -off, 3); setupRotor(rotorGroup4, -off, -off, 4)
+    // ── 导航灯：左红 / 右绿 / 尾蓝 ──
+    const ledGeo = new THREE.SphereGeometry(0.013, 10, 10)
+    const glowGeo = new THREE.SphereGeometry(0.028, 10, 10)
+    const addLED = (color, x, y, z) => {
+      const led = new THREE.Mesh(ledGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9 }))
+      led.position.set(x, y, z)
+      const halo = new THREE.Mesh(glowGeo, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.18, blending: THREE.AdditiveBlending, depthWrite: false }))
+      halo.position.set(x, y, z)
+      droneGroup.add(halo)
+      droneGroup.add(led)
+      return led
+    }
+    leftLED = addLED(0xff3b30, -0.16, 0.01, 0.10)
+    rightLED = addLED(0x34c759, 0.16, 0.01, 0.10)
+    rearLED = addLED(0x0a84ff, 0, 0.01, -0.15)
 
-    const ledGeo = new THREE.SphereGeometry(0.015, 8, 8)
-    leftLED = new THREE.Mesh(ledGeo, new THREE.MeshBasicMaterial({ color: 0xff3b30, transparent: true, opacity: 0.8 }))
-    leftLED.position.set(-off - 0.04, 0.02, off + 0.04); droneGroup.add(leftLED)
-    rightLED = new THREE.Mesh(ledGeo, new THREE.MeshBasicMaterial({ color: 0x34c759, transparent: true, opacity: 0.8 }))
-    rightLED.position.set(off + 0.04, 0.02, off + 0.04); droneGroup.add(rightLED)
-    rearLED = new THREE.Mesh(ledGeo, new THREE.MeshBasicMaterial({ color: 0x007aff, transparent: true, opacity: 0.8 }))
-    rearLED.position.set(0, 0.02, -0.16); droneGroup.add(rearLED)
+    // ── 起落架：双侧滑橇 ──
+    const skidGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.26, 8)
+    const strutGeo = new THREE.CylinderGeometry(0.005, 0.005, 0.07, 6)
+    ;[1, -1].forEach(s => {
+      const skid = new THREE.Mesh(skidGeo, carbonSoft)
+      skid.rotation.x = Math.PI / 2
+      skid.position.set(s * 0.085, -0.115, 0)
+      droneGroup.add(skid)
+      ;[0.07, -0.07].forEach(z => {
+        const strut = new THREE.Mesh(strutGeo, carbonSoft)
+        strut.position.set(s * 0.085, -0.08, z)
+        strut.rotation.z = s * 0.25
+        droneGroup.add(strut)
+      })
+    })
 
-    const gimbal = new THREE.Group(); gimbal.position.set(0, -0.065, 0.02)
-    gimbal.add(new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.04, 6), carbonMat))
-    gimbal.add(new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.03, 0.04), carbonMat))
-    const lens = new THREE.Mesh(new THREE.SphereGeometry(0.016, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00e5ff }))
-    lens.position.set(0, -0.02, 0.02); gimbal.add(lens)
+    // ── 云台相机：前下方三轴云台 + 玻璃镜头 ──
+    const gimbal = new THREE.Group()
+    gimbal.position.set(0, -0.075, 0.09)
+    const gimbalArm = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.035, 8), carbonMat)
+    gimbalArm.position.y = 0.01
+    gimbal.add(gimbalArm)
+    const cameraBody = new THREE.Mesh(new THREE.SphereGeometry(0.032, 20, 16), carbonSoft)
+    cameraBody.position.y = -0.02
+    gimbal.add(cameraBody)
+    const lensBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.018, 0.02, 16), goldMetalMat)
+    lensBarrel.rotation.x = Math.PI / 2
+    lensBarrel.position.set(0, -0.02, 0.032)
+    gimbal.add(lensBarrel)
+    const lensGlass = new THREE.Mesh(new THREE.SphereGeometry(0.013, 16, 12), glassMat)
+    lensGlass.position.set(0, -0.02, 0.042)
+    gimbal.add(lensGlass)
     droneGroup.add(gimbal)
+
+    // 整体放大，增强存在感
+    droneGroup.scale.setScalar(1.35)
     scene.add(droneGroup)
   }
 
@@ -573,11 +658,18 @@ export function useThreeEarth(canvasContainer) {
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     renderer.setSize(w, h)
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.toneMapping = THREE.ACESFilmicToneMapping
+    renderer.toneMappingExposure = 1.1
     container.appendChild(renderer.domElement)
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.3))
-    const dl1 = new THREE.DirectionalLight(0xffffff, 1.4); dl1.position.set(5, 3, 5); scene.add(dl1)
-    const gl = new THREE.DirectionalLight(0xC8924B, 2.2); gl.position.set(-6, 2, -4); scene.add(gl)
+    // 环境反射贴图：让金属/碳纤维材质产生真实高光
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.06).texture
+    pmrem.dispose()
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35))
+    const dl1 = new THREE.DirectionalLight(0xfff4e0, 1.5); dl1.position.set(5, 3, 5); scene.add(dl1)
+    const gl = new THREE.DirectionalLight(0xC8924B, 2.0); gl.position.set(-6, 2, -4); scene.add(gl)
 
     createBaseMap()
 
@@ -588,55 +680,47 @@ export function useThreeEarth(canvasContainer) {
 
     earthMesh = new THREE.Group(); scene.add(earthMesh)
 
-    // 加载 NASA 地球模型
-    new GLTFLoader().load("/assets/Earth_1_12756.glb", gltf => {
-      nasaEarthModel = gltf.scene
-      const box = new THREE.Box3().setFromObject(nasaEarthModel)
-      const size = new THREE.Vector3(); box.getSize(size)
-      const sc = (sphereRadius * 2) / Math.max(size.x, size.y, size.z)
-      nasaEarthModel.scale.set(sc, sc, sc)
-      const center = new THREE.Vector3(); box.getCenter(center)
-      nasaEarthModel.position.sub(center.multiplyScalar(sc))
-      nasaEarthModel.traverse(child => {
-        if (child.isMesh) {
-          const origMap = child.material?.map || (Array.isArray(child.material) ? child.material[0]?.map : null)
-          if (origMap) {
-            child.material = new THREE.ShaderMaterial({
-              uniforms: { earthMap: { value: origMap }, goldColor: { value: new THREE.Color(0.82, 0.60, 0.28) }, lightDir: { value: new THREE.Vector3(0.6, 0.3, 0.7).normalize() } },
-              vertexShader: "varying vec2 vUv; varying vec3 vNormal; void main() { vUv = uv; vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
-              fragmentShader: `
-                uniform sampler2D earthMap; uniform vec3 goldColor; uniform vec3 lightDir;
-                varying vec2 vUv; varying vec3 vNormal;
-                void main() {
-                  vec4 texel = texture2D(earthMap, vUv);
-                  float r = texel.r, g = texel.g, b = texel.b;
-                  float greenness = max(g - max(r, b) * 1.05, 0.0);
-                  r = min(1.0, r + greenness * 2.8); b = max(0.0, b - greenness * 0.6);
-                  float gray = r * 0.299 + g * 0.587 + b * 0.114;
-                  float blueExcess = b - r * 1.3;
-                  float oceanStrength = smoothstep(0.0, 0.09, blueExcess) * smoothstep(0.60, 0.28, gray);
-                  float deepDark = smoothstep(0.07, 0.02, gray);
-                  float isOcean = clamp(oceanStrength + deepDark, 0.0, 1.0);
-                  float landMask = 1.0 - isOcean;
-                  float landBright = smoothstep(0.1, 0.88, gray);
-                  vec3 landColor = mix(goldColor * 0.48, goldColor * 1.25, landBright);
-                  vec3 oceanColor = mix(vec3(0.005, 0.009, 0.022), vec3(0.016, 0.026, 0.052), smoothstep(0.0, 0.35, gray));
-                  vec3 baseColor = mix(oceanColor, landColor, landMask);
-                  float edgeFactor = smoothstep(0.35, 0.50, isOcean) * smoothstep(0.70, 0.50, isOcean);
-                  baseColor += goldColor * edgeFactor * 0.55;
-                  float hemi = dot(vNormal, normalize(lightDir)) * 0.5 + 0.5;
-                  float lighting = mix(0.22, 1.0, hemi);
-                  gl_FragColor = vec4(baseColor * lighting, 1.0);
-                }
-              `
-            })
-          } else {
-            child.material = new THREE.MeshStandardMaterial({ color: 0x020202, metalness: 0.9, roughness: 0.4 })
+    // 加载预处理黑金地球贴图（scripts/process_earth.py 由 8K NASA 日图生成）
+    new THREE.TextureLoader().load("/assets/earth-gold.jpg", tex => {
+      tex.colorSpace = THREE.SRGBColorSpace
+      tex.anisotropy = renderer.capabilities.getMaxAnisotropy()
+      const surfGeo = new THREE.SphereGeometry(sphereRadius, 96, 96)
+      const surfMat = new THREE.ShaderMaterial({
+        uniforms: {
+          earthMap: { value: tex },
+          lightDir: { value: new THREE.Vector3(0.55, 0.35, 0.75).normalize() }
+        },
+        vertexShader: "varying vec2 vUv; varying vec3 vNormal; void main() { vUv = uv; vNormal = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+        fragmentShader: `
+          uniform sampler2D earthMap;
+          uniform vec3 lightDir;
+          varying vec2 vUv;
+          varying vec3 vNormal;
+          void main() {
+            vec3 base = texture2D(earthMap, vUv).rgb;
+
+            // 柔和光照：背光面不死黑
+            float ndl = dot(normalize(vNormal), lightDir);
+            float day = smoothstep(-0.25, 0.7, ndl);
+            vec3 col = base * mix(0.40, 1.16, day);
+
+            // 晨昏线金色微光
+            float terminator = smoothstep(0.22, 0.0, abs(ndl - 0.06));
+            col += vec3(0.98, 0.78, 0.42) * terminator * 0.10;
+
+            // 菲涅尔边缘光，勾勒球体轮廓
+            float fres = pow(1.0 - clamp(dot(normalize(vNormal), vec3(0.0, 0.0, 1.0)), 0.0, 1.0), 2.6);
+            col += vec3(0.80, 0.60, 0.30) * fres * 0.28;
+
+            gl_FragColor = vec4(col, 1.0);
           }
-        }
+        `
       })
-      earthMesh.add(nasaEarthModel)
-    }, undefined, err => console.error("Failed to load NASA Earth model:", err))
+      const surf = new THREE.Mesh(surfGeo, surfMat)
+      // 贴图经度零点与站点坐标系对齐（SphereGeometry UV 与 latLongToVector3 相差 90°）
+      surf.rotation.y = Math.PI / 2
+      earthMesh.add(surf)
+    }, undefined, err => console.error("Failed to load earth texture:", err))
 
     // 线框覆盖层
     const wireGeo = new THREE.SphereGeometry(sphereRadius + 0.005, 48, 48)

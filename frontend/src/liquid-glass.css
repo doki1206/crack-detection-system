@@ -1,0 +1,165 @@
+/* ============================================================
+   Liquid Glass 设计系统 — 仿 iOS 26 液态玻璃
+   结构：色调层(半透明背景) + 模糊层(backdrop-filter)
+        + 折射层(SVG feDisplacementMap, Chromium 增强)
+        + 高光层(inset shadow / 扫光)
+   用法：.lg-glass 基础玻璃 / .lg-glass--refract 真折射增强
+        / .lg-glass--sheen 悬停扫光
+   ============================================================ */
+
+:root {
+  --lg-blur: 22px;
+  --lg-saturate: 180%;
+  --lg-bg: rgba(26, 26, 30, 0.42);
+  --lg-bg-strong: rgba(30, 30, 34, 0.62);
+  --lg-border: rgba(255, 255, 255, 0.14);
+  --lg-border-strong: rgba(255, 255, 255, 0.22);
+  --lg-hi-top: rgba(255, 255, 255, 0.20);
+  --lg-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  --lg-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ── 基础液态玻璃 ─────────────────────────────── */
+.lg-glass {
+  position: relative;
+  background: var(--lg-bg);
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
+  border: 1px solid var(--lg-border);
+  box-shadow:
+    inset 0 1px 0 var(--lg-hi-top),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    var(--lg-shadow);
+}
+
+/* ── 真折射增强（Chromium：backdrop-filter 链式调用 SVG 位移滤镜）── */
+@supports ((backdrop-filter: url("#x")) or (-webkit-backdrop-filter: url("#x"))) {
+  .lg-glass--refract {
+    backdrop-filter: url(#liquid-glass-distort) blur(2px) saturate(200%);
+    -webkit-backdrop-filter: url(#liquid-glass-distort) blur(2px) saturate(200%);
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
+
+/* ── 悬停扫光 ─────────────────────────────────── */
+.lg-glass--sheen {
+  overflow: hidden;
+}
+.lg-glass--sheen::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    transparent 32%,
+    rgba(255, 255, 255, 0.09) 47%,
+    rgba(255, 255, 255, 0.16) 52%,
+    transparent 67%
+  );
+  transform: translateX(-130%);
+  transition: transform 1s var(--lg-ease-spring);
+  pointer-events: none;
+}
+.lg-glass--sheen:hover::after {
+  transform: translateX(130%);
+}
+
+/* ── 液态玻璃按钮 ─────────────────────────────── */
+/* 金色主按钮：半透金 + 内高光 + 按压回弹 */
+.btn.btn--gold {
+  background: linear-gradient(160deg, rgba(226, 176, 102, 0.95), rgba(180, 128, 58, 0.95));
+  border: 1px solid rgba(255, 224, 168, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -2px 4px rgba(120, 74, 20, 0.35),
+    0 8px 24px rgba(200, 146, 75, 0.28);
+  text-shadow: 0 1px 2px rgba(120, 74, 20, 0.35);
+  transition: all 0.35s var(--lg-ease-spring);
+}
+.btn.btn--gold:hover {
+  background: linear-gradient(160deg, rgba(238, 192, 118, 1), rgba(196, 140, 66, 1));
+  transform: translateY(-2px) scale(1.02);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 4px rgba(120, 74, 20, 0.3),
+    0 14px 36px rgba(200, 146, 75, 0.42);
+}
+.btn.btn--gold:active {
+  transform: scale(0.96);
+  transition-duration: 0.1s;
+}
+
+/* 幽灵按钮 → 液态玻璃次级按钮 */
+.btn.btn--ghost {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 6px 18px rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.82);
+  transition: all 0.35s var(--lg-ease-spring);
+}
+.btn.btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #fff;
+  transform: translateY(-2px);
+}
+.btn.btn--ghost:active {
+  transform: scale(0.96);
+  transition-duration: 0.1s;
+}
+
+/* ── 深色描边按钮（深色页面下的 outline）─────── */
+.btn.btn--outline {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.3s var(--lg-ease-spring);
+}
+.btn.btn--outline:hover {
+  border-color: rgba(200, 146, 75, 0.55);
+  color: var(--gold-light);
+  background: rgba(200, 146, 75, 0.08);
+  transform: translateY(-1px);
+}
+
+/* ── 玻璃卡片（替代原先生硬的 rgba 卡片）───────── */
+.lg-card {
+  position: relative;
+  background: var(--lg-bg);
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
+  border: 1px solid var(--lg-border);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    inset 0 1px 0 var(--lg-hi-top),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    var(--lg-shadow);
+  transition:
+    transform 0.5s var(--lg-ease-spring),
+    border-color 0.4s ease,
+    box-shadow 0.5s ease,
+    background 0.4s ease;
+}
+.lg-card:hover {
+  transform: translateY(-6px);
+  background: var(--lg-bg-strong);
+  border-color: rgba(200, 146, 75, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 24px 48px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(200, 146, 75, 0.12);
+}
+
+/* ── 降低动态效果偏好 ─────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .lg-glass--sheen::after { display: none; }
+  .lg-card, .lg-card:hover { transition: none; transform: none; }
+}

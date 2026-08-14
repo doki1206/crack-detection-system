@@ -1,7 +1,18 @@
 <template>
   <div class="app">
-    <nav class="nav" :class="{ 'nav--dark': navDark }">
-      <div class="nav__inner">
+    <!-- 液态玻璃折射滤镜定义（供 .lg-glass--refract 通过 backdrop-filter: url() 调用） -->
+    <svg class="lg-svg-defs" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs>
+        <filter id="liquid-glass-distort">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.018" numOctaves="2" seed="17" result="noise" />
+          <feGaussianBlur in="noise" stdDeviation="1.8" result="smooth" />
+          <feDisplacementMap in="SourceGraphic" in2="smooth" scale="46" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+    </svg>
+
+    <nav class="nav">
+      <div class="nav__pill lg-glass lg-glass--refract" :class="{ 'nav__pill--scrolled': scrolled }">
         <router-link to="/" class="nav__logo">
           <img src="/assets/logo-transparent.png" alt="穹眸瞰陷" class="nav__logo-img" />
           <span>穹眸瞰陷</span>
@@ -14,6 +25,7 @@
         </div>
       </div>
     </nav>
+
     <main class="main-content">
       <router-view v-slot="{ Component }">
         <transition name="page" mode="out-in">
@@ -21,6 +33,7 @@
         </transition>
       </router-view>
     </main>
+
     <footer class="footer">
       <div class="footer__inner">
         <span>穹眸瞰陷 &copy; 2026</span>
@@ -31,11 +44,15 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onBeforeUnmount, nextTick } from "vue"
-import { useRoute, useRouter } from "vue-router"
-const route = useRoute()
+import { ref, onMounted, onBeforeUnmount, nextTick } from "vue"
+import { useRouter } from "vue-router"
 const router = useRouter()
-const navDark = computed(() => route.path === "/")
+
+/* 导航滚动状态：滚动后玻璃 pill 加深 */
+const scrolled = ref(false)
+function onScroll() {
+  scrolled.value = window.scrollY > 32
+}
 
 /* Reveal observer */
 let revealObserver = null
@@ -46,6 +63,8 @@ function observeReveals() {
   })
 }
 onMounted(() => {
+  window.addEventListener("scroll", onScroll, { passive: true })
+  onScroll()
   revealObserver = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry, i) => {
@@ -62,7 +81,10 @@ onMounted(() => {
   observeReveals()
 })
 router.afterEach(() => setTimeout(() => observeReveals(), 500))
-onBeforeUnmount(() => { if (revealObserver) revealObserver.disconnect() })
+onBeforeUnmount(() => {
+  window.removeEventListener("scroll", onScroll)
+  if (revealObserver) revealObserver.disconnect()
+})
 </script>
 
 <style>
@@ -72,6 +94,11 @@ onBeforeUnmount(() => { if (revealObserver) revealObserver.disconnect() })
   --gold-light: #d4a05a;
   --gold-dark: #a07030;
   --gold-dim: rgba(200,146,75,0.08);
+  /* 冰蓝点缀色系：扫描线 / 数据 / 科技元素专用 */
+  --ice: #7cd4f0;
+  --ice-deep: #4db8dd;
+  --ice-dim: rgba(124, 212, 240, 0.08);
+  --ice-border: rgba(124, 212, 240, 0.22);
   --black: #0a0a0a;
   --gray-900: #1d1d1f;
   --gray-700: #3a3a3c;
@@ -100,17 +127,41 @@ h1,h2,h3,h4 { text-wrap: balance; line-height: 1.15; }
 p { text-wrap: pretty; line-height: 1.7; }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 2px; }
 
-/* Nav */
-.nav { position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-nav); height: 56px; display: flex; align-items: center; transition: background 0.4s ease, backdrop-filter 0.4s ease; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-.nav--dark { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; }
-.nav__inner { max-width: 1200px; width: 100%; margin: 0 auto; padding: 0 28px; display: flex; align-items: center; justify-content: space-between; }
-.nav__logo { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--black); font-size: 16px; font-weight: 600; letter-spacing: 0.02em; }
-.nav--dark .nav__logo { color: white; }
-.nav__logo-img { height: 28px; width: auto; border-radius: 4px; }
-.nav__links { display: flex; align-items: center; gap: 28px; font-size: 13px; font-weight: 500; }
-.nav__links a { text-decoration: none; color: rgba(0,0,0,0.6); transition: color 0.25s; position: relative; padding: 4px 0; }
-.nav--dark .nav__links a { color: rgba(255,255,255,0.65); }
-.nav__links a:hover, .nav__links a.router-link-exact-active { color: var(--gold); }
+.lg-svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ===== 悬浮液态玻璃导航（Apple 风格 pill）===== */
+.nav {
+  position: fixed;
+  top: 14px;
+  left: 0;
+  right: 0;
+  z-index: var(--z-nav);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  padding: 0 16px;
+}
+.nav__pill {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 8px 12px 8px 18px;
+  border-radius: 999px;
+  transition: background 0.45s ease, box-shadow 0.45s ease, transform 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.nav__pill--scrolled {
+  background: rgba(18, 18, 22, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 16px 40px rgba(0, 0, 0, 0.5);
+}
+.nav__logo { display: flex; align-items: center; gap: 8px; text-decoration: none; color: #fff; font-size: 15px; font-weight: 600; letter-spacing: 0.02em; }
+.nav__logo-img { height: 26px; width: auto; border-radius: 4px; }
+.nav__links { display: flex; align-items: center; gap: 26px; font-size: 13px; font-weight: 500; }
+.nav__links a { text-decoration: none; color: rgba(255,255,255,0.62); transition: color 0.25s; position: relative; padding: 4px 0; }
+.nav__links a:hover, .nav__links a.router-link-exact-active { color: var(--gold-light); }
 .nav__links a::after { content: ""; position: absolute; bottom: -2px; left: 0; right: 0; height: 1.5px; background: var(--gold); transform: scaleX(0); transition: transform 0.25s; }
 .nav__links a.router-link-exact-active::after { transform: scaleX(1); }
 .nav__cta { background: var(--gold) !important; color: #fff !important; padding: 5px 16px !important; border-radius: 18px; font-weight: 600; transition: all 0.2s !important; }
@@ -153,14 +204,14 @@ p { text-wrap: pretty; line-height: 1.7; }
 ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
 
 /* Utility: page-hero shared by sub-pages */
-.page-hero { padding: 120px 24px 56px; background: var(--black); text-align: center; }
-.page-hero__inner { max-width: 680px; margin: 0 auto; }
-.page-hero__title { font-size: clamp(36px, 6vw, 52px); font-weight: 700; color: #fff; letter-spacing: -0.02em; animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1); }
-.page-hero__sub { font-size: 16px; color: var(--gold); margin-top: 10px; font-weight: 400; animation: fadeUp 0.7s 0.1s both cubic-bezier(0.16,1,0.3,1); }
+.page-hero { padding: 150px 24px 72px; background: var(--black); text-align: center; }
+.page-hero__inner { max-width: 760px; margin: 0 auto; }
+.page-hero__title { font-size: clamp(44px, 7vw, 68px); font-weight: 700; color: #fff; letter-spacing: -0.02em; animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1); }
+.page-hero__sub { font-size: 16px; color: var(--gold); margin-top: 14px; font-weight: 400; animation: fadeUp 0.7s 0.1s both cubic-bezier(0.16,1,0.3,1); }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Utility: section */
-.section { padding: 88px 24px; }
+.section { padding: 108px 24px; }
 .section--dark { background: var(--black); color: #fff; }
 .section--gray { background: var(--gray-50); }
 .section__inner { max-width: 1080px; margin: 0 auto; }
@@ -169,7 +220,8 @@ p { text-wrap: pretty; line-height: 1.7; }
 .section--dark .section__heading { color: #fff; }
 
 @media (max-width: 768px) {
-  .nav__links { gap: 18px; font-size: 12px; }
+  .nav__pill { gap: 18px; padding: 7px 10px 7px 14px; }
+  .nav__links { gap: 16px; font-size: 12px; }
   .section { padding: 60px 20px; }
   .section__heading { margin-bottom: 28px; }
 }

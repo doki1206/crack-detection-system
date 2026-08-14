@@ -78,7 +78,7 @@
         <p class="workflow-summary">从无人机野外航采到云端算法渲染，四步构成地表危害全自动监控闭环，确保矿区人员对地表塌陷危险的秒级感知与精准处理。</p>
         
         <div class="workflow">
-          <div class="workflow__step" v-for="(s, i) in workflow" :key="i">
+          <div class="workflow__step lg-card lg-glass--sheen" v-for="(s, i) in workflow" :key="i">
             <div class="workflow__icon-wrap">
               <div class="workflow__icon" v-html="s.icon"></div>
             </div>
@@ -117,16 +117,13 @@
         <h2 class="section__heading section__heading--center font-premium">鄂尔多斯酸刺沟驻矿行程</h2>
         
         <div class="timeline">
-          <div class="timeline__item" v-for="(t, i) in timeline" :key="i">
-            <div class="timeline__marker">
-              <div class="marker-dot"></div>
-              <div class="marker-pulse"></div>
-            </div>
-            <div class="timeline__body">
+          <div class="timeline__item lg-card lg-glass--sheen" v-for="(t, i) in timeline" :key="i">
+            <div class="timeline__top">
+              <span class="timeline__step">{{ String(i + 1).padStart(2, '0') }}</span>
               <span class="timeline__date">{{ t.date }}</span>
-              <h4 class="timeline__title">{{ t.title }}</h4>
-              <p class="timeline__desc">{{ t.desc }}</p>
             </div>
+            <h4 class="timeline__title">{{ t.title }}</h4>
+            <p class="timeline__desc">{{ t.desc }}</p>
           </div>
         </div>
       </div>
@@ -236,7 +233,7 @@ const timeline = [
   text-transform: uppercase;
 }
 .page-hero__title {
-  font-size: clamp(38px, 6vw, 56px);
+  font-size: clamp(44px, 7vw, 68px);
   font-weight: 700;
   color: #fff;
   letter-spacing: -0.02em;
@@ -433,46 +430,46 @@ const timeline = [
 .context-row__title { font-size: 17px; font-weight: 700; color: #fff; }
 .context-row__text { font-size: 13.5px; line-height: 1.7; color: rgba(255, 255, 255, 0.7); }
 
-/* Timeline redesign */
-.timeline { max-width: 760px; margin: 0 auto; position: relative; }
-.timeline::before { content: ""; position: absolute; left: 15px; top: 8px; bottom: 8px; width: 1.5px; background: var(--gray-300); }
-.timeline__item { display: flex; gap: 32px; padding-bottom: 40px; position: relative; }
-.timeline__item:last-child { padding-bottom: 0; }
-.timeline__marker { flex-shrink: 0; position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
-.marker-dot { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); border: 2.5px solid var(--white); z-index: 2; box-shadow: 0 0 0 1px var(--gold); }
-.marker-pulse {
-  position: absolute;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--gold-dim);
-  opacity: 0;
-  transition: transform 0.4s, opacity 0.4s;
+/* Timeline → Apple 式圆角矩形横滑卡片 */
+.timeline {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 8px 4px 24px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* 两端渐隐，暗示可滑动 */
+  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
 }
-.timeline__item:hover .marker-pulse {
-  transform: scale(1.1);
-  opacity: 1;
+.timeline::-webkit-scrollbar { display: none; }
+.timeline__item {
+  flex: 0 0 min(320px, 82vw);
+  scroll-snap-align: start;
+  border-radius: 20px;
+  padding: 28px 26px;
 }
-.timeline__body {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-lg);
-  padding: 20px 24px;
-  flex-grow: 1;
-  box-shadow: 
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    0 16px 40px rgba(0, 0, 0, 0.45);
-  transition: all 0.4s;
+.timeline__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
 }
-.timeline__item:hover .timeline__body {
-  border-color: rgba(200, 146, 75, 0.3);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 24px 48px rgba(0,0,0,0.6);
+.timeline__step {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ice);
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border: 1px solid var(--ice-border);
+  border-radius: 999px;
+  background: var(--ice-dim);
 }
 .timeline__date { font-size: 11px; color: var(--gold); font-weight: 700; letter-spacing: 0.05em; font-family: var(--font-mono); }
-.timeline__title { font-size: 16px; font-weight: 700; color: #fff; margin: 4px 0 6px; }
-.timeline__desc { font-size: 13px; line-height: 1.65; color: rgba(255,255,255,0.7); }
+.timeline__title { font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 10px; }
+.timeline__desc { font-size: 13px; line-height: 1.7; color: rgba(255,255,255,0.55); }
 
 @media (max-width: 768px) {
   .mission { grid-template-columns: 1fr; gap: 40px; }

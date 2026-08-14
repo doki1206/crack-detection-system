@@ -4,6 +4,10 @@
       <div class="page-hero__inner">
         <h1 class="page-hero__title font-premium">AI 智能地表裂缝检测</h1>
         <p class="page-hero__sub">上传无人机巡检图像，进行厘米级缺陷分割与物理定标分析</p>
+        <button class="btn btn--ghost btn--sm metrics-btn" @click="showMetrics = true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17L17 3l4 4L7 21H3v-4z"/><path d="M8 16l1.5-1.5M11 13l1.5-1.5M14 10l1.5-1.5"/></svg>
+          测量内容
+        </button>
       </div>
     </section>
 
@@ -327,6 +331,28 @@
         </div>
       </div>
     </section>
+
+    <!-- 测量内容说明弹窗 -->
+    <transition name="metrics-fade">
+      <div v-if="showMetrics" class="metrics-modal" @click.self="showMetrics = false">
+        <div class="metrics-dialog lg-glass" role="dialog" aria-modal="true" aria-label="测量内容与指标定义">
+          <div class="metrics-dialog__head">
+            <h3>测量内容与指标定义</h3>
+            <button class="metrics-close" @click="showMetrics = false" aria-label="关闭">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg>
+            </button>
+          </div>
+          <p class="metrics-dialog__intro">系统对每处识别出的裂缝输出以下测量指标。像素值经 GSD（地面采样距离）标定后，自动换算为地表真实物理尺寸。</p>
+          <div class="metrics-list">
+            <div class="metrics-item" v-for="m in metricDefs" :key="m.name">
+              <div class="metrics-item__name">{{ m.name }}<span class="metrics-item__en">{{ m.en }}</span></div>
+              <p class="metrics-item__def">{{ m.def }}</p>
+            </div>
+          </div>
+          <p class="metrics-dialog__note">注：产状、联通性、分形维数为大模型基于单张正射影像的推断值，供工程参考；精确测量需结合 DEM 数据与实地复核。</p>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -349,6 +375,22 @@ const result = ref(null)
 const naturalSize = ref({ w: 0, h: 0 })
 const showCalibrator = ref(false)
 const hoveredIndex = ref(null)
+const showMetrics = ref(false)
+
+// 测量指标定义（与后端大模型输出字段对应）
+const metricDefs = [
+  { name: "裂缝类型", en: "type", def: "裂缝的成因与形态分类（如沉陷裂缝、张性裂缝、剪切裂缝等），由大模型根据几何形态特征判别。" },
+  { name: "几何长度", en: "length_px", def: "裂缝主轴线从起点到终点的延伸长度。像素值经 GSD 标定后换算为地表实际长度（米/厘米）。" },
+  { name: "最大宽度", en: "max_width_px", def: "裂缝开口最宽处的宽度，是评估沉陷发育程度与危险等级的核心指标。" },
+  { name: "影响面积", en: "area_px", def: "裂缝轮廓所包围的地表区域面积，反映病害的影响范围。" },
+  { name: "地表走向", en: "orientation", def: "裂缝延伸的地理方向（如东北-西南走向），可间接反映区域构造应力的主方向。" },
+  { name: "裂纹密度", en: "crack_density", def: "单位面积内裂缝发育的密集程度，密度越高说明地表破碎越严重。" },
+  { name: "产状", en: "attitude", def: "地质构造要素的空间姿态，用倾向与倾角表示（如倾向120°、倾角45°）。" },
+  { name: "联通性", en: "connectivity", def: "裂缝之间的相互连通程度。联通性强意味着地下水渗流通道发育，塌陷扩展风险更高。" },
+  { name: "分形维数", en: "fractal_dimension", def: "描述裂缝形态复杂程度的分形特征值，数值越大形态越曲折复杂。" },
+  { name: "置信度", en: "confidence", def: "大模型对该处裂缝判定把握程度的估计值（0–100%），供人工复核时参考。" },
+  { name: "安全评分", en: "safety_score", def: "系统基于裂缝最大宽度、数量与密度加权计算的综合风险分（0–100），分数越高越安全。" },
+]
 
 // History List State
 const history = ref([])
@@ -905,9 +947,13 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.layout { display: grid; grid-template-columns: 1fr 380px; gap: 28px; align-items: start; }
-.left-panel { display: flex; flex-direction: column; gap: 20px; }
-.right-panel { position: sticky; top: 76px; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 28px; align-items: start; }
+.left-panel { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.right-panel { position: sticky; top: 88px; }
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: 1fr; }
+  .right-panel { position: static; }
+}
 
 /* Upload panel styling */
 .upload-panel { 
@@ -1007,7 +1053,7 @@ onBeforeUnmount(() => {
 .preview__wrap { position: relative; background: #0c0c0e; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .preview__img { display: block; width: 100%; height: auto; max-height: 72vh; object-fit: contain; }
 .preview__canvas { position: absolute; z-index: 3; }
-.preview__bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 18px; background: var(--white); border-top: 1px solid var(--gray-150); }
+.preview__bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 12px 18px; background: rgba(16, 16, 20, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-top: 1px solid rgba(255, 255, 255, 0.08); }
 
 .btn--sm {
   padding: 8px 16px !important;
@@ -1037,8 +1083,8 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(to right, transparent, var(--gold), transparent);
-  box-shadow: 0 0 16px var(--gold), 0 0 6px var(--gold);
+  background: linear-gradient(to right, transparent, var(--ice), transparent);
+  box-shadow: 0 0 16px rgba(124, 212, 240, 0.7), 0 0 6px var(--ice);
   animation: scanVertical 2.2s linear infinite;
 }
 .scanning-grid {
@@ -1472,4 +1518,103 @@ onBeforeUnmount(() => {
   .layout { grid-template-columns: 1fr; }
   .right-panel { position: static; }
 }
+
+/* ── 测量内容按钮与弹窗 ─────────────────────── */
+.metrics-btn { margin-top: 26px; animation: fadeUp 0.7s 0.2s both cubic-bezier(0.16,1,0.3,1); }
+
+.metrics-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(4, 4, 6, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.metrics-dialog {
+  width: min(680px, 100%);
+  max-height: 82vh;
+  overflow-y: auto;
+  border-radius: 24px;
+  padding: 32px 34px;
+  background: rgba(22, 22, 26, 0.78);
+}
+.metrics-dialog__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.metrics-dialog__head h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.metrics-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.metrics-close:hover { background: rgba(255, 255, 255, 0.16); color: #fff; transform: scale(1.06); }
+.metrics-dialog__intro {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 22px;
+}
+.metrics-list {
+  display: flex;
+  flex-direction: column;
+}
+.metrics-item {
+  padding: 14px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.metrics-item__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ice);
+  margin-bottom: 5px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.metrics-item__en {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(124, 212, 240, 0.45);
+}
+.metrics-item__def {
+  font-size: 13px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.62);
+}
+.metrics-dialog__note {
+  margin-top: 20px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--ice-dim);
+  border: 1px solid var(--ice-border);
+  font-size: 12px;
+  line-height: 1.65;
+  color: rgba(124, 212, 240, 0.75);
+}
+
+.metrics-fade-enter-active, .metrics-fade-leave-active { transition: opacity 0.3s ease; }
+.metrics-fade-enter-from, .metrics-fade-leave-to { opacity: 0; }
+.metrics-fade-enter-active .metrics-dialog { transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s; }
+.metrics-fade-enter-from .metrics-dialog { transform: translateY(24px) scale(0.97); opacity: 0; }
 </style>

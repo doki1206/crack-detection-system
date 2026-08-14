@@ -18,7 +18,7 @@
         <h2 class="section__heading section__heading--center font-premium">指导老师</h2>
         
         <div class="advisors-grid">
-          <div class="advisor-card" v-for="a in advisors" :key="a.name">
+          <div class="advisor-card lg-card lg-glass--sheen" v-for="a in advisors" :key="a.name">
             <div class="advisor-card__visual">
               <div class="avatar-ring animate-rotate"></div>
               <div class="avatar-glow"></div>
@@ -54,7 +54,7 @@
         <p class="members-summary">实践团队覆盖矿业工程、AI技术应用、数码建模、视频记录及联络公关，形成了优势互补、高效协同的一体化团队结构。</p>
         
         <div class="members-grid">
-          <div class="member-card" v-for="m in members" :key="m.name">
+          <div class="member-card lg-card lg-glass--sheen" v-for="m in members" :key="m.name">
             <div class="member-card__visual">
               <div class="member-avatar">
                 <!-- Specialized SVG geometric digital avatar -->
@@ -113,12 +113,8 @@ const advisors = [
     tags: [
       "国家重点研发计划项目 3 项",
       "中国科协青年人才托举工程（2019）",
-      "中国岩石力学与工程学会吸附性岩石力学与工程专委会秘书长",
-      "主持国家自然科学基金项目/课题 2 项",
-      "国内外发明专利 20 项 & 软件著作权 3 项",
       "省部级科技进步奖 6 项",
-      "发表 SCI/EI 学术论文 50 余篇",
-      "出版矿业专著 1 部",
+      "发表 SCI/EI 学术论文 50 余篇"
     ]
   }
 ]
@@ -173,7 +169,7 @@ const members = [
   text-transform: uppercase;
 }
 .page-hero__title {
-  font-size: clamp(38px, 6vw, 56px);
+  font-size: clamp(44px, 7vw, 68px);
   font-weight: 700;
   color: #fff;
   letter-spacing: -0.02em;
@@ -186,22 +182,29 @@ const members = [
   letter-spacing: 0.02em;
 }
 
-/* Advisor Card Section */
+/* Advisor Card Section — Apple 式横滑卡片 */
 .section--advisor {
   background: transparent;
   padding-bottom: 56px;
 }
 .advisors-grid {
   display: flex;
-  flex-direction: column;
-  gap: 32px;
-  max-width: 860px;
-  margin: 0 auto;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 8px 4px 24px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
 }
+.advisors-grid::-webkit-scrollbar { display: none; }
 .advisor-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start; /* 名字顶端对齐，避免因标签数不同导致错位 */
   gap: 40px;
+  flex: 0 0 min(620px, 88vw);
+  scroll-snap-align: start;
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);
@@ -212,6 +215,8 @@ const members = [
     inset 0 1px 0 rgba(255, 255, 255, 0.15),
     0 16px 40px rgba(0, 0, 0, 0.45);
 }
+.advisor-card__info { flex: 1; min-width: 0; }
+.advisor-card__info .advisor-head { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 @media (max-width: 768px) {
   .advisor-card { flex-direction: column; text-align: center; gap: 28px; padding: 32px 20px; }
 }
@@ -280,11 +285,20 @@ const members = [
   color: rgba(255, 255, 255, 0.6);
 }
 .members-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 28px;
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 8px 4px 24px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
 }
+.members-grid::-webkit-scrollbar { display: none; }
 .member-card {
+  flex: 0 0 min(300px, 82vw);
+  scroll-snap-align: start;
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(40px) saturate(180%);
   -webkit-backdrop-filter: blur(40px) saturate(180%);

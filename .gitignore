@@ -9,6 +9,14 @@ node_modules/
 # ── 构建产物 ──────────────────────────
 frontend/dist/
 dist/
+dist-verify/
+dv2/
+
+# ── 大体积二进制资产 ───────────────────
+# 贴图源文件由 process_earth.py 读取（NASA 日图/海洋遮罩），可重新下载，不入库
+frontend/scripts/*.jpg
+# 已弃用的 3D 地球模型（改用 earth-gold.jpg 贴图方案）
+frontend/public/assets/Earth_1_12756.glb
 
 # ── 日志 ─────────────────────────────
 *.log
