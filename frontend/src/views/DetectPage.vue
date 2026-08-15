@@ -705,10 +705,10 @@ function drawBBoxes() {
     // Draw Bbox (Dashed Gold Box)
     if (c.bbox && c.bbox.length === 4) {
       const [x, y, w, h] = c.bbox
-      const rx = x * sx
-      const ry = y * sy
-      const rw = w * sx
-      const rh = h * sy
+      const rx = x * rect.w
+      const ry = y * rect.h
+      const rw = w * rect.w
+      const rh = h * rect.h
 
       ctx.save()
       ctx.strokeStyle = isHovered ? "var(--gold)" : "rgba(200, 146, 75, 0.45)"
@@ -731,15 +731,15 @@ function drawBBoxes() {
       ctx.lineWidth = isHovered ? 2.8 : 1.8
 
       ctx.beginPath()
-      ctx.moveTo(c.contour[0][0] * sx, c.contour[0][1] * sy)
+      ctx.moveTo(c.contour[0][0] * rect.w, c.contour[0][1] * rect.h)
       for (let k = 1; k < c.contour.length; k++) {
-        ctx.lineTo(c.contour[k][0] * sx, c.contour[k][1] * sy)
+        ctx.lineTo(c.contour[k][0] * rect.w, c.contour[k][1] * rect.h)
       }
       if (c.contour.length > 2) {
         const first = c.contour[0]
         const last = c.contour[c.contour.length - 1]
         const dist = Math.sqrt(Math.pow(first[0] - last[0], 2) + Math.pow(first[1] - last[1], 2))
-        if (dist < 50) {
+        if (dist < 0.05) {
           ctx.closePath()
         }
       }
@@ -771,10 +771,10 @@ function handleCanvasMouseMove(e) {
     const c = result.value.cracks[i]
     if (!c.bbox || c.bbox.length < 4) continue
     const [x, y, w, h] = c.bbox
-    const rx = x * sx
-    const ry = y * sy
-    const rw = w * sx
-    const rh = h * sy
+    const rx = x * rect.w
+    const ry = y * rect.h
+    const rw = w * rect.w
+    const rh = h * rect.h
 
     if (mx >= rx && mx <= rx + rw && my >= ry && my <= ry + rh) {
       foundIdx = i
@@ -871,17 +871,8 @@ function saveToHistory(imgBase64, name, cracksCount, resData) {
 // 按比例缩放检测结果中的几何坐标（bbox、contour），使其匹配压缩后的图片尺寸；
 // metrics 里的像素指标保持原图口径，保证 GSD 物理换算仍然正确
 function scaleCrackGeometry(resData, scale) {
-  if (!resData || !resData.cracks || scale >= 1) return resData
-  return {
-    ...resData,
-    cracks: resData.cracks.map(c => ({
-      ...c,
-      bbox: c.bbox?.length === 4 ? c.bbox.map(v => Math.round(v * scale)) : c.bbox,
-      contour: Array.isArray(c.contour)
-        ? c.contour.map(p => [Math.round(p[0] * scale), Math.round(p[1] * scale)])
-        : c.contour
-    }))
-  }
+  // 归一化坐标（0~1）与图片分辨率无关，历史记录无需缩放坐标
+  return resData
 }
 
 function loadHistory(item) {

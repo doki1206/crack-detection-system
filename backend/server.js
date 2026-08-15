@@ -33,17 +33,17 @@ const SYSTEM_PROMPT = `你是一个专业的工业与地质缺陷检测模型。
 {
   "cracks": [
     {
-      "bbox": [100, 200, 50, 20], 
-      "contour": [[100,200], [150,210], [120,220]], // 裂缝的几个边缘关键点坐标
+      "bbox": [0.30, 0.40, 0.12, 0.04], 
+      "contour": [[0.30,0.40], [0.42,0.41], [0.38,0.46]], 
       "metrics": {
         "length_px": 120,
         "max_width_px": 5,
         "area_px": 600,
         "orientation": "东北-西南走向",
-        "crack_density": "0.15", // 裂纹密度
-        "attitude": "倾向120°，倾角45°", // 产状
-        "connectivity": "强", // 联通性
-        "fractal_dimension": "1.24" // 分形维数
+        "crack_density": "0.15",
+        "attitude": "倾向120°，倾角45°",
+        "connectivity": "强",
+        "fractal_dimension": "1.24"
       },
       "type": "沉陷裂缝",
       "confidence": 0.95
@@ -51,7 +51,12 @@ const SYSTEM_PROMPT = `你是一个专业的工业与地质缺陷检测模型。
   ], 
   "summary": "画面中发现1条明显的横向沉陷裂缝，风险较高。"
 }
-如果图片中没有裂缝，请返回空的 cracks 数组。bbox单位为像素，基于原图尺寸。如果有飞行高度信息，请结合常理估算。`;
+【坐标规范 - 极其重要】bbox 和 contour 必须使用归一化坐标（0 到 1 之间的小数，相对图片整体）：
+- bbox = [x, y, width, height]，其中 x、width 是相对图片宽度的比例，y、height 是相对图片高度的比例。例如 bbox [0.5, 0.5, 0.2, 0.1] 表示位于图片中央、宽占 20%、高占 10% 的框。
+- contour 中每个点 [x, y] 同样用 0~1 归一化：x 相对图片宽度，y 相对图片高度。
+- 严禁输出像素坐标，务必输出 0~1 的小数。
+- metrics 中的 length_px / max_width_px / area_px 用估算的像素值即可。
+如果图片中没有裂缝，请返回空的 cracks 数组。`;
 
 /**
  * @typedef {Object} CrackMetrics
@@ -195,17 +200,20 @@ app.post('/api/detect', async (req, res) => {
       // 画标注
       result.cracks.forEach(crack => {
         const { bbox, metrics, contour } = crack;
+        const W = image.width;
+        const H = image.height;
         
-        // 画矩形框 (红框)
+        // 画矩形框 (红框) — bbox 为归一化坐标，乘回原图尺寸
         if (bbox && bbox.length === 4) {
-          const [x, y, w, h] = bbox;
+          const [nx, ny, nw, nh] = bbox;
+          const x = nx * W, y = ny * H, w = nw * W, h = nh * H;
           ctx.strokeStyle = 'red';
-          ctx.lineWidth = Math.max(3, Math.floor(image.width / 500)); // 线宽自适应图片大小
+          ctx.lineWidth = Math.max(3, Math.floor(W / 500)); // 线宽自适应图片大小
           ctx.strokeRect(x, y, w, h);
           
           // 写文字信息
           ctx.fillStyle = 'red';
-          const fontSize = Math.max(20, Math.floor(image.width / 50));
+          const fontSize = Math.max(20, Math.floor(W / 50));
           ctx.font = `bold ${fontSize}px Arial`;
           let textY = y > fontSize ? y - 10 : y + fontSize + 10;
           let infoText = crack.type;
@@ -216,21 +224,21 @@ app.post('/api/detect', async (req, res) => {
           ctx.fillText(infoText, x, textY);
         }
 
-        // 画多边形轮廓 (蓝线)
+        // 画多边形轮廓 (蓝线) — contour 为归一化坐标，乘回原图尺寸
         if (contour && contour.length > 0) {
           ctx.strokeStyle = 'blue';
-          ctx.lineWidth = Math.max(2, Math.floor(image.width / 800));
+          ctx.lineWidth = Math.max(2, Math.floor(W / 800));
           ctx.beginPath();
-          ctx.moveTo(contour[0][0], contour[0][1]);
+          ctx.moveTo(contour[0][0] * W, contour[0][1] * H);
           for (let i = 1; i < contour.length; i++) {
-            ctx.lineTo(contour[i][0], contour[i][1]);
+            ctx.lineTo(contour[i][0] * W, contour[i][1] * H);
           }
-          // 判断首尾点距离决定是否闭合路径 (距离<50则视为闭合多边形)
+          // 判断首尾点距离决定是否闭合路径 (归一化距离<0.05则视为闭合)
           if (contour.length > 2) {
             const first = contour[0];
             const last = contour[contour.length - 1];
             const dist = Math.sqrt(Math.pow(first[0] - last[0], 2) + Math.pow(first[1] - last[1], 2));
-            if (dist < 50) {
+            if (dist < 0.05) {
               ctx.closePath();
             }
           }
